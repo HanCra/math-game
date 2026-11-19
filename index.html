@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Maths">
+<meta name="theme-color" content="#fff6e5">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-180.png">
+<title>Maths</title>
+<style>
+  :root {
+    --bg: #fff6e5;
+    --ink: #2b2d42;
+    --soft: #8d8fa6;
+    --card: #ffffff;
+    --calc: #ff7b54;
+    --dbl: #9b5de5;
+    --tab: #00a6a6;
+    --line: #3a86ff;
+    --ok: #2ec27e;
+    --mid: #f6c026;
+    --bad: #ef476f;
+    --shadow: 0 6px 0 rgba(43,45,66,.12);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: var(--bg); color: var(--ink);
+    font-family: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", -apple-system, system-ui, sans-serif;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+    touch-action: manipulation;
+  }
+  body { position: fixed; inset: 0; }
+  button {
+    font: inherit; color: inherit; border: 0; cursor: pointer;
+    touch-action: manipulation;
+  }
+  .screen { position: absolute; inset: 0; display: none; flex-direction: column;
+    padding: max(16px, env(safe-area-inset-top)) 20px max(16px, env(safe-area-inset-bottom)); }
+  .screen.on { display: flex; }
+
+  /* ---------- HOME ---------- */
+  .home-top { display: flex; justify-content: space-between; align-items: center; height: 64px; }
+  .pill { background: var(--card); border-radius: 999px; padding: 8px 18px; font-size: 30px; font-weight: 800; box-shadow: var(--shadow); display: flex; align-items: center; gap: 8px; }
+  .icon-btn { background: var(--card); width: 56px; height: 56px; border-radius: 50%; font-size: 26px; box-shadow: var(--shadow); display: inline-flex; align-items: center; justify-content: center; }
+  .tiles { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 22px; padding: 18px 0 8px; }
+  .tile { border-radius: 32px; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; box-shadow: 0 10px 0 rgba(0,0,0,.18); position: relative; overflow: hidden; transition: transform .1s; }
+  .tile:active { transform: translateY(6px); box-shadow: 0 4px 0 rgba(0,0,0,.18); }
+  .tile .big { font-size: 64px; font-weight: 900; letter-spacing: 2px; line-height: 1; }
+  .tile .small { font-size: 30px; font-weight: 800; opacity: .9; }
+  .tile svg { width: 80%; max-width: 300px; }
+  .lvl { display: flex; gap: 8px; }
+  .lvl i { width: 16px; height: 16px; border-radius: 50%; background: rgba(255,255,255,.35); }
+  .lvl i.f { background: #fff; }
+  .t-calc { background: var(--calc); } .t-dbl { background: var(--dbl); }
+  .t-tab { background: var(--tab); } .t-line { background: var(--line); }
+
+  /* ---------- GAME ---------- */
+  .game-top { display: flex; align-items: center; gap: 14px; height: 64px; }
+  .dots { flex: 1; display: flex; justify-content: center; gap: 10px; }
+  .dots i { width: 22px; height: 22px; border-radius: 50%; background: #e7dfcf; transition: background .2s; }
+  .dots i.cur { box-shadow: 0 0 0 4px var(--ink) inset; background: #fff; }
+  .dots i.g { background: var(--ok); } .dots i.y { background: var(--mid); } .dots i.r { background: var(--bad); }
+  .game-body { flex: 1; display: flex; gap: 20px; min-height: 0; }
+  .stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--card); border-radius: 32px; box-shadow: var(--shadow); padding: 20px; min-width: 0; position: relative; }
+  .eq { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 14px; font-size: 76px; font-weight: 900; }
+  .eq .op { color: var(--soft); }
+  .box { min-width: 1.9em; height: 1.35em; padding: 0 .15em; border-radius: 20px; border: 5px dashed var(--soft); display: inline-flex; align-items: center; justify-content: center; color: var(--line); }
+  .box.filled { border-style: solid; border-color: var(--line); }
+  .box.ok { border: 5px solid var(--ok); color: var(--ok); background: #e6f8ee; }
+  .box.show { border: 5px solid var(--mid); color: #b8860b; background: #fff7d6; }
+  .box.bad { border-color: var(--bad); color: var(--bad); }
+  .shake { animation: shake .4s; }
+  @keyframes shake { 0%,100% { transform: translateX(0) } 20% { transform: translateX(-14px) } 40% { transform: translateX(14px) } 60% { transform: translateX(-10px) } 80% { transform: translateX(10px) } }
+  .pop { animation: pop .35s; }
+  @keyframes pop { 0% { transform: scale(1) } 50% { transform: scale(1.18) } 100% { transform: scale(1) } }
+
+  /* doubling machine */
+  .machine { display: flex; align-items: center; gap: 12px; font-size: 72px; font-weight: 900; flex-wrap: wrap; justify-content: center; }
+  .machine .num { background: #f3ecff; border-radius: 24px; padding: 6px 22px; }
+  .machine .gear { background: var(--dbl); color: #fff; border-radius: 50%; width: 1.7em; height: 1.7em; display: inline-flex; align-items: center; justify-content: center; font-size: 56px; box-shadow: 0 6px 0 rgba(0,0,0,.15); }
+  .machine .arrow { color: var(--soft); font-size: 60px; }
+
+  /* number line */
+  .nl-target { font-size: 80px; font-weight: 900; color: var(--line); margin-bottom: 10px; min-height: 1.1em; }
+  .nl { width: 100%; max-width: 900px; touch-action: none; }
+  .nl text { font-family: inherit; font-weight: 800; }
+
+  /* pad */
+  .pad { width: 330px; display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; gap: 12px; }
+  .pad button { background: var(--card); border-radius: 24px; font-size: 46px; font-weight: 900; box-shadow: var(--shadow); min-height: 70px; }
+  .pad button:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(43,45,66,.12); }
+  .pad .go { background: var(--ok); color: #fff; }
+  .pad .del { color: var(--bad); }
+  .pad.only-go { grid-template-columns: 1fr; grid-template-rows: 1fr; align-content: end; }
+  .pad.only-go .go { min-height: 160px; font-size: 80px; }
+
+  @media (orientation: portrait) {
+    .game-body { flex-direction: column; }
+    .pad { width: 100%; height: 38%; grid-template-columns: repeat(5, 1fr); grid-auto-rows: 1fr; }
+    .pad button { min-height: 0; }
+    .pad .del { grid-column: span 2; }
+    .pad .go { grid-column: span 3; }
+    .pad.only-go { height: 22%; grid-template-columns: 1fr; }
+    .tiles { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* hint overlay */
+  .overlay { position: absolute; inset: 0; background: rgba(43,45,66,.45); display: none; align-items: center; justify-content: center; z-index: 10; padding: 20px; }
+  .overlay.on { display: flex; }
+  .sheet { background: var(--card); border-radius: 32px; padding: 24px; max-width: 94%; max-height: 92%; overflow: auto; box-shadow: 0 10px 30px rgba(0,0,0,.2); }
+  .hint-row { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 18px; font-size: 54px; font-weight: 900; color: var(--soft); }
+  .blocks { display: inline-flex; align-items: flex-end; gap: 6px; flex-wrap: wrap; max-width: 420px; }
+  .b100 { width: 60px; height: 60px; border-radius: 6px; background: var(--calc);
+    background-image: linear-gradient(rgba(255,255,255,.45) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.45) 1px, transparent 1px);
+    background-size: 6px 6px; }
+  .b10 { width: 12px; height: 60px; border-radius: 4px; background: var(--line);
+    background-image: linear-gradient(rgba(255,255,255,.6) 1px, transparent 1px); background-size: 12px 6px; }
+  .b1 { width: 12px; height: 12px; border-radius: 3px; background: var(--ok); }
+  .groups { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; max-width: 700px; }
+  .group { border: 4px solid var(--tab); border-radius: 18px; padding: 8px; display: grid; gap: 6px; align-content: start; }
+  .dot { width: 18px; height: 18px; border-radius: 50%; background: var(--tab); }
+
+  /* end screen */
+  .end { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 30px; }
+  .stars { font-size: 120px; letter-spacing: 10px; }
+  .stars .off { filter: grayscale(1); opacity: .25; }
+  .levelup { font-size: 60px; font-weight: 900; color: var(--ok); display: none; }
+  .end-btns { display: flex; gap: 30px; }
+  .end-btns button { width: 150px; height: 150px; border-radius: 36px; font-size: 70px; box-shadow: var(--shadow); background: var(--card); }
+  .end-btns .again { background: var(--ok); color: #fff; }
+
+  /* parent panel */
+  .parent { font-family: -apple-system, system-ui, sans-serif; font-size: 20px; min-width: 340px; }
+  .parent h2 { margin: 0 0 12px; font-size: 24px; }
+  .prow { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 0; border-bottom: 1px solid #eee; }
+  .prow button { width: 46px; height: 46px; border-radius: 12px; background: #eee; font-size: 24px; font-weight: 800; }
+  .prow b { min-width: 60px; text-align: center; display: inline-block; }
+  .parent .wide { width: auto; padding: 0 16px; margin-top: 16px; height: 46px; border-radius: 12px; background: #eee; font-size: 18px; }
+  .parent small { color: var(--soft); display: block; margin-top: 10px; }
+
+  .confetti { position: absolute; top: -20px; width: 14px; height: 20px; border-radius: 3px; z-index: 20; pointer-events: none; animation: fall 2.2s ease-in forwards; }
+  @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<section class="screen on" id="home">
+  <div class="home-top">
+    <div class="pill"><span>⭐</span><span id="starTotal">0</span></div>
+    <div style="display:flex;gap:12px">
+      <button class="icon-btn" id="soundBtn" aria-label="son">🔊</button>
+      <button class="icon-btn" id="parentBtn" aria-label="parent">⚙️</button>
+    </div>
+  </div>
+  <div class="tiles">
+    <button class="tile t-calc" data-game="calc">
+      <div class="big">+ −</div><div class="small">48 − ☐ = 36</div><div class="lvl"></div>
+    </button>
+    <button class="tile t-dbl" data-game="dbl">
+      <div class="big">×2 :2</div><div class="small">16 ➜ 32</div><div class="lvl"></div>
+    </button>
+    <button class="tile t-tab" data-game="tab">
+      <div class="big">× :</div><div class="small">6 × 5 = 30</div><div class="lvl"></div>
+    </button>
+    <button class="tile t-line" data-game="line">
+      <svg viewBox="0 0 300 70" aria-hidden="true">
+        <line x1="10" y1="40" x2="290" y2="40" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+        <g stroke="#fff" stroke-width="5" stroke-linecap="round">
+          <line x1="20" y1="28" x2="20" y2="52"/><line x1="73" y1="32" x2="73" y2="48"/><line x1="127" y1="32" x2="127" y2="48"/>
+          <line x1="180" y1="32" x2="180" y2="48"/><line x1="233" y1="32" x2="233" y2="48"/><line x1="280" y1="28" x2="280" y2="52"/>
+        </g>
+        <path d="M180 22 l-12 -16 h24 z" fill="#ffd166"/>
+      </svg>
+      <div class="lvl"></div>
+    </button>
+  </div>
+</section>
+
+<!-- GAME -->
+<section class="screen" id="game">
+  <div class="game-top">
+    <button class="icon-btn" id="homeBtn" aria-label="maison">🏠</button>
+    <div class="dots" id="dots"></div>
+    <button class="icon-btn" id="hintBtn" aria-label="aide">💡</button>
+  </div>
+  <div class="game-body">
+    <div class="stage" id="stage"></div>
+    <div class="pad" id="pad"></div>
+  </div>
+  <div class="overlay" id="hint"><div class="sheet" id="hintSheet"></div></div>
+</section>
+
+<!-- END -->
+<section class="screen" id="endScreen">
+  <div class="end">
+    <div class="stars" id="endStars"></div>
+    <div class="dots" id="endDots" style="flex:0"></div>
+    <div class="levelup" id="levelUp">⬆️ ⭐</div>
+    <div class="end-btns">
+      <button id="endHome" aria-label="maison">🏠</button>
+      <button class="again" id="endAgain" aria-label="encore">🔁</button>
+    </div>
+  </div>
+</section>
+
+<!-- PARENT -->
+<div class="overlay" id="parent"><div class="sheet parent" id="parentSheet"></div></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- helpers ---------- */
+  function rand(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function $(id) { return document.getElementById(id); }
+  var MINUS = "−";
+  var ROUND = 10;
+
+  /* ---------- saved state ---------- */
+  var KEY = "mathgame-v1";
+  var S = { lv: { calc: 3, dbl: 2, tab: 2, line: 2 }, stars: 0, rounds: 0, sound: true, played: {} };
+  try {
+    var saved = JSON.parse(localStorage.getItem(KEY) || "null");
+    if (saved && saved.lv) {
+      for (var k in S.lv) if (saved.lv[k]) S.lv[k] = saved.lv[k];
+      S.stars = saved.stars || 0; S.rounds = saved.rounds || 0;
+      S.sound = saved.sound !== false; S.played = saved.played || {};
+    }
+  } catch (e) {}
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+  /* ---------- sound ---------- */
+  var AC = null;
+  function audio() {
+    if (!AC) { var C = window.AudioContext || window.webkitAudioContext; if (C) { try { AC = new C(); } catch (e) {} } }
+    if (AC && AC.state === "suspended") AC.resume();
+    return AC;
+  }
+  ["touchend", "click"].forEach(function (ev) { document.addEventListener(ev, audio, true); });
+  function tone(f, t0, d, type, vol) {
+    if (!S.sound) return;
+    var a = audio(); if (!a) return;
+    var o = a.createOscillator(), g = a.createGain(), t = a.currentTime + t0;
+    o.type = type || "sine"; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol || 0.25, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + d + 0.05);
+  }
+  var sfx = {
+    tap: function () { tone(660, 0, 0.06, "triangle", 0.12); },
+    ok: function () { tone(784, 0, 0.15, "triangle"); tone(1175, 0.1, 0.25, "triangle"); },
+    bad: function () { tone(220, 0, 0.25, "sawtooth", 0.12); },
+    end: function () { [523, 659, 784, 1047].forEach(function (f, i) { tone(f, i * 0.12, 0.3, "triangle"); }); }
+  };
+
+  /* ---------- question generators ---------- */
+  // Every generator returns a question object.
+  // kind "eq":      parts [a, op, b, "=", c], blank = index of the missing part
+  // kind "machine": input, op ("×2" or ":2"), answer
+  // kind "lineP":   place the target on the number line (tap)
+  // kind "lineR":   read the number at the arrow (type)
+
+  function eq(a, op, b, c, blank, hint) {
+    var parts = [a, op, b, "=", c];
+    return { kind: "eq", parts: parts, blank: blank, answer: parts[blank], hint: hint };
+  }
+
+  function genCalc(L) {
+    var op = Math.random() < 0.5 ? "+" : MINUS, a, b;
+    var plus = op === "+";
+    if (L === 1) {
+      if (plus) { a = rand(2, 12); b = rand(1, 20 - a); } else { a = rand(6, 20); b = rand(1, a - 1); }
+    } else if (L === 2) { // to 100, no carrying
+      var at = rand(1, 8), au = rand(0, 8);
+      if (plus) { a = at * 10 + au; b = rand(0, 9 - at) * 10 + rand(1, 9 - au); }
+      else { at = rand(2, 9); au = rand(1, 9); a = at * 10 + au; b = rand(0, at - 1) * 10 + rand(0, au); if (b === 0) b = au; }
+    } else if (L === 3) { // to 100 with carrying (like the homework)
+      if (plus) { a = rand(10, 89); b = rand(3, 100 - a); } else { a = rand(20, 100); b = rand(3, a - 5); }
+    } else if (L === 4) { // round tens / hundreds to 1000
+      if (Math.random() < 0.5) {
+        if (plus) { a = rand(1, 8) * 100; b = rand(1, (1000 - a) / 100) * 100; } else { a = rand(2, 10) * 100; b = rand(1, a / 100 - 1) * 100; }
+      } else {
+        if (plus) { a = rand(10, 90) * 10; b = rand(1, Math.min(9, (1000 - a) / 10)) * 10; } else { a = rand(11, 100) * 10; b = rand(1, 9) * 10; }
+      }
+    } else if (L === 5) { // 3-digit ± 2-digit
+      if (plus) { a = rand(100, 890); b = rand(5, Math.min(99, 999 - a)); } else { a = rand(110, 999); b = rand(5, 99); }
+    } else { // 3-digit ± 3-digit
+      if (plus) { a = rand(100, 800); b = rand(100, 1000 - a); } else { a = rand(300, 1000); b = rand(100, a - 50); }
+    }
+    var c = plus ? a + b : a - b;
+    var blank = L === 1 ? 4 : L === 2 ? (Math.random() < 0.7 ? 4 : pick([0, 2])) : pick([4, 4, 0, 2]);
+    return eq(a, op, b, c, blank, "blocks");
+  }
+
+  function genDbl(L) {
+    var half, n;
+    if (L === 1) { half = false; n = rand(2, 10); }
+    else if (L === 2) { half = Math.random() < 0.25; n = half ? 2 * rand(2, 10) : rand(11, 50); }
+    else if (L === 3) { half = Math.random() < 0.5; n = half ? 2 * rand(6, 50) : rand(11, 50); }
+    else if (L === 4) { half = Math.random() < 0.5; n = half ? 2 * rand(20, 100) : rand(20, 100); }
+    else { half = Math.random() < 0.5; n = half ? (Math.random() < 0.5 ? 10 * 2 * rand(5, 50) : 2 * rand(50, 499)) : (Math.random() < 0.5 ? 25 * rand(2, 20) : rand(100, 499)); }
+    return { kind: "machine", input: n, op: half ? ":2" : "×2", answer: half ? n / 2 : n * 2, hint: "blocks" };
+  }
+
+  var TABLES = { 1: [2, 5, 10], 2: [2, 5, 10], 3: [2, 3, 4, 5, 10], 4: [2, 3, 4, 5, 6, 10], 5: [2, 3, 4, 5, 6, 7, 8, 9, 10] };
+  function genTab(L) {
+    var t = pick(TABLES[L] || TABLES[5]), n = rand(1, 10), p = t * n;
+    var form = L === 1 ? "mul" : pick(["mul", "mul", "div", "div", "miss"]);
+    if (form === "mul") return Math.random() < 0.5 ? eq(n, "×", t, p, 4, "groups") : eq(t, "×", n, p, 4, "groups");
+    if (form === "div") return eq(p, ":", t, n, 4, "groups");
+    return Math.random() < 0.5 ? eq(n, "×", t, p, 0, "groups") : eq(t, "×", n, p, 2, "groups");
+  }
+
+  function genLine(L) {
+    var step, start;
+    if (L === 1) { step = 1; start = 0; }
+    else if (L === 2) { if (Math.random() < 0.5) { step = 1; start = rand(1, 9) * 10; } else { step = 2; start = pick([0, 20, 40, 60, 80]); } }
+    else if (L === 3) { step = pick([2, 5, 10]); start = step === 10 ? 0 : step === 5 ? pick([0, 50]) : pick([0, 20, 40, 60, 80]); }
+    else if (L === 4) { if (Math.random() < 0.5) { step = 10; start = rand(1, 9) * 100; } else { step = 5; start = rand(1, 18) * 50; } }
+    else { step = pick([100, 50, 20, 25]); start = step === 100 ? 0 : step === 50 ? pick([0, 500]) : step === 25 ? pick([0, 250, 500, 750]) : rand(0, 4) * 200; }
+    var labels = L === 1 ? [0, 5, 10] : [0, 10];
+    var idx = rand(1, 9);
+    while (labels.indexOf(idx) >= 0) idx = rand(1, 9);
+    var read = L >= 3 && Math.random() < 0.4;
+    return { kind: read ? "lineR" : "lineP", start: start, step: step, idx: idx, labels: labels, answer: read ? start + idx * step : idx, hint: null };
+  }
+
+  var GAMES = {
+    calc: { gen: genCalc, max: 6, color: "var(--calc)" },
+    dbl:  { gen: genDbl,  max: 5, color: "var(--dbl)" },
+    tab:  { gen: genTab,  max: 5, color: "var(--tab)" },
+    line: { gen: genLine, max: 5, color: "var(--line)" }
+  };
+
+  /* ---------- screens ---------- */
+  function show(id) {
+    ["home", "game", "endScreen"].forEach(function (s) { $(s).classList.toggle("on", s === id); });
+    if (id === "home") renderHome();
+  }
+
+  function renderHome() {
+    $("starTotal").textContent = S.stars;
+    $("soundBtn").textContent = S.sound ? "🔊" : "🔇";
+    Array.prototype.forEach.call(document.querySelectorAll(".tile"), function (t) {
+      var g = t.getAttribute("data-game"), html = "";
+      for (var i = 1; i <= GAMES[g].max; i++) html += '<i class="' + (i <= S.lv[g] ? "f" : "") + '"></i>';
+      t.querySelector(".lvl").innerHTML = html;
+    });
+  }
+
+  /* ---------- game engine ---------- */
+  var G = null;
+
+  function startGame(id) {
+    G = { id: id, lv: S.lv[id], i: 0, res: [], q: null, tries: 0, input: "", sel: null, busy: false };
+    show("game");
+    nextQ();
+  }
+
+  function nextQ() {
+    if (G.i >= ROUND) return endGame();
+    var q = GAMES[G.id].gen(G.lv);
+    // avoid repeating the exact same question twice in a row
+    if (G.q && JSON.stringify(q) === JSON.stringify(G.q)) q = GAMES[G.id].gen(G.lv);
+    G.q = q; G.tries = 0; G.input = ""; G.sel = null; G.busy = false;
+    renderDots(); renderStage(); renderPad();
+    $("hintBtn").style.visibility = q.hint ? "visible" : "hidden";
+  }
+
+  function renderDots() {
+    var html = "";
+    for (var i = 0; i < ROUND; i++) {
+      var r = G.res[i], c = r === 0 ? "g" : r === 1 ? "y" : r === 2 ? "r" : i === G.i ? "cur" : "";
+      html += '<i class="' + c + '"></i>';
+    }
+    $("dots").innerHTML = html;
+  }
+
+  function renderStage() {
+    var q = G.q, st = $("stage");
+    st.style.borderTop = "10px solid " + GAMES[G.id].color;
+    if (q.kind === "eq") {
+      st.innerHTML = '<div class="eq">' + q.parts.map(function (p, i) {
+        if (i === q.blank) return '<span class="box" id="ans"></span>';
+        var isOp = (i === 1 || i === 3);
+        return '<span class="' + (isOp ? "op" : "") + '">' + p + "</span>";
+      }).join("") + "</div>";
+    } else if (q.kind === "machine") {
+      st.innerHTML = '<div class="machine"><span class="num">' + q.input + '</span><span class="arrow">➜</span>' +
+        '<span class="gear">' + q.op + '</span><span class="arrow">➜</span><span class="box" id="ans"></span></div>';
+    } else {
+      st.innerHTML = (q.kind === "lineP" ? '<div class="nl-target" id="nlTarget">' + (q.start + q.idx * q.step) + "</div>"
+                                         : '<div class="nl-target"><span class="box" id="ans"></span></div>') +
+        '<svg class="nl" id="nl" viewBox="0 0 1000 220"></svg>';
+      drawLine();
+      if (q.kind === "lineP") bindLine();
+    }
+  }
+
+  var X0 = 70, DX = 86;
+  function drawLine(showIdx, showClass) {
+    var q = G.q, s = "";
+    s += '<line x1="20" y1="120" x2="' + (X0 - 8) + '" y2="120" stroke="#c9c2b2" stroke-width="6" stroke-dasharray="6 10"/>';
+    s += '<line x1="' + (X0 + 10 * DX + 8) + '" y1="120" x2="985" y2="120" stroke="#c9c2b2" stroke-width="6" stroke-dasharray="6 10"/>';
+    s += '<line x1="' + X0 + '" y1="120" x2="' + (X0 + 10 * DX) + '" y2="120" stroke="#2b2d42" stroke-width="7" stroke-linecap="round"/>';
+    for (var i = 0; i <= 10; i++) {
+      var x = X0 + i * DX, big = i === 0 || i === 10 || i === 5;
+      s += '<line x1="' + x + '" y1="' + (big ? 92 : 100) + '" x2="' + x + '" y2="' + (big ? 148 : 140) + '" stroke="#2b2d42" stroke-width="' + (big ? 7 : 5) + '" stroke-linecap="round"/>';
+      if (q.labels.indexOf(i) >= 0) s += '<text x="' + x + '" y="196" text-anchor="middle" font-size="42" fill="#2b2d42">' + (q.start + i * q.step) + "</text>";
+    }
+    // marker: for reading questions the arrow is fixed; for placing, it follows the child's choice
+    var mi = q.kind === "lineR" ? q.idx : G.sel;
+    if (mi !== null && mi !== undefined) s += marker(mi, q.kind === "lineR" ? "#ff7b54" : "#3a86ff");
+    if (showIdx !== undefined) {
+      s += marker(showIdx, showClass === "ok" ? "#2ec27e" : "#f6c026");
+      s += '<text x="' + (X0 + showIdx * DX) + '" y="196" text-anchor="middle" font-size="42" fill="' + (showClass === "ok" ? "#2ec27e" : "#b8860b") + '">' + (q.start + showIdx * q.step) + "</text>";
+    }
+    $("nl").innerHTML = s;
+  }
+  function marker(i, col) {
+    var x = X0 + i * DX;
+    return '<path d="M' + x + ' 86 l-22 -34 h44 z" fill="' + col + '" stroke="#fff" stroke-width="3"/>';
+  }
+  function bindLine() {
+    var svg = $("nl"), down = false;
+    function at(ev) {
+      if (G.busy) return;
+      var r = svg.getBoundingClientRect();
+      var x = (ev.clientX - r.left) / r.width * 1000;
+      var i = Math.round((x - X0) / DX);
+      i = Math.max(0, Math.min(10, i));
+      if (i !== G.sel) { G.sel = i; sfx.tap(); drawLine(); }
+    }
+    svg.addEventListener("pointerdown", function (e) { down = true; at(e); });
+    svg.addEventListener("pointermove", function (e) { if (down) at(e); });
+    window.addEventListener("pointerup", function () { down = false; });
+  }
+
+  function renderPad() {
+    var pad = $("pad");
+    if (G.q.kind === "lineP") {
+      pad.className = "pad only-go";
+      pad.innerHTML = '<button class="go" data-k="go">✓</button>';
+      return;
+    }
+    pad.className = "pad";
+    var keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "del", "go"];
+    pad.innerHTML = keys.map(function (k) {
+      if (k === "del") return '<button class="del" data-k="del">⌫</button>';
+      if (k === "go") return '<button class="go" data-k="go">✓</button>';
+      return '<button data-k="' + k + '">' + k + "</button>";
+    }).join("");
+  }
+
+  function updateBox() {
+    var b = $("ans"); if (!b) return;
+    b.textContent = G.input;
+    b.className = "box" + (G.input ? " filled" : "");
+  }
+
+  function key(k) {
+    if (!G || G.busy) return;
+    if (k === "go") return check();
+    if (G.q.kind === "lineP") return;
+    if (k === "del") { G.input = G.input.slice(0, -1); sfx.tap(); return updateBox(); }
+    if (G.input.length >= 4) return;
+    if (G.input === "0") G.input = "";
+    G.input += k; sfx.tap(); updateBox();
+  }
+
+  function check() {
+    var q = G.q, val;
+    if (q.kind === "lineP") { if (G.sel === null) return; val = G.sel; }
+    else { if (G.input === "") return; val = parseInt(G.input, 10); }
+    var ok = val === q.answer;
+    var target = q.kind === "lineP" ? $("nl") : $("ans");
+    if (ok) {
+      G.busy = true; sfx.ok();
+      G.res[G.i] = G.tries === 0 ? 0 : 1;
+      if (q.kind === "lineP") { G.sel = null; drawLine(q.idx, "ok"); }
+      else target.className = "box ok pop";
+      G.i++; renderDots();
+      setTimeout(nextQ, 900);
+    } else {
+      G.tries++; sfx.bad();
+      target.classList.remove("shake"); void target.getBoundingClientRect(); target.classList.add("shake");
+      if (q.kind !== "lineP") target.className = "box bad shake";
+      if (G.tries >= 2) {
+        G.busy = true;
+        G.res[G.i] = 2;
+        setTimeout(function () {
+          if (q.kind === "lineP") { G.sel = null; drawLine(q.idx, "show"); }
+          else { target.textContent = q.answer; target.className = "box show pop"; }
+        }, 450);
+        G.i++; renderDots();
+        setTimeout(nextQ, 2400);
+      } else {
+        setTimeout(function () {
+          if (q.kind === "lineP") { G.sel = null; drawLine(); }
+          else { G.input = ""; updateBox(); }
+        }, 450);
+      }
+    }
+  }
+
+  function endGame() {
+    var first = G.res.filter(function (r) { return r === 0; }).length;
+    var stars = first >= 9 ? 3 : first >= 6 ? 2 : 1;
+    var up = false;
+    if (first >= 9 && G.lv < GAMES[G.id].max) { S.lv[G.id] = G.lv + 1; up = true; }
+    else if (first <= 4 && G.lv > 1) { S.lv[G.id] = G.lv - 1; }
+    S.stars += stars; S.rounds++;
+    S.played[G.id] = (S.played[G.id] || 0) + 1;
+    save();
+    var h = "";
+    for (var i = 0; i < 3; i++) h += '<span class="' + (i < stars ? "" : "off") + '">⭐</span>';
+    $("endStars").innerHTML = h;
+    $("endDots").innerHTML = $("dots").innerHTML.replace(/ class="cur"/g, "");
+    $("levelUp").style.display = up ? "block" : "none";
+    show("endScreen");
+    sfx.end();
+    if (stars === 3) confetti();
+  }
+
+  function confetti() {
+    var cols = ["#ff7b54", "#9b5de5", "#00a6a6", "#3a86ff", "#f6c026", "#2ec27e"];
+    for (var i = 0; i < 40; i++) {
+      var d = document.createElement("div");
+      d.className = "confetti";
+      d.style.left = Math.random() * 100 + "vw";
+      d.style.background = pick(cols);
+      d.style.animationDelay = Math.random() * 0.6 + "s";
+      document.body.appendChild(d);
+      setTimeout(function (el) { return function () { el.remove(); }; }(d), 3200);
+    }
+  }
+
+  /* ---------- hints (visual help, no words) ---------- */
+  function blocks(n) {
+    var h = Math.floor(n / 100), t = Math.floor(n % 100 / 10), u = n % 10, s = '<span class="blocks">';
+    for (var i = 0; i < h; i++) s += '<span class="b100"></span>';
+    for (i = 0; i < t; i++) s += '<span class="b10"></span>';
+    for (i = 0; i < u; i++) s += '<span class="b1"></span>';
+    return s + "</span>";
+  }
+  function groups(count, size) {
+    var s = '<div class="groups">';
+    for (var g = 0; g < count; g++) {
+      s += '<div class="group" style="grid-template-columns: repeat(' + Math.min(size, 5) + ', 18px)">';
+      for (var d = 0; d < size; d++) s += '<span class="dot"></span>';
+      s += "</div>";
+    }
+    return s + "</div>";
+  }
+  function showHint() {
+    var q = G.q, html = "";
+    if (q.kind === "machine") {
+      html = q.op === "×2"
+        ? '<div class="hint-row">' + blocks(q.input) + "<span>+</span>" + blocks(q.input) + "</div>"
+        : '<div class="hint-row">' + blocks(q.input) + "</div>";
+    } else if (q.hint === "blocks") {
+      html = '<div class="hint-row">' + q.parts.map(function (p, i) {
+        if (i === 1 || i === 3) return "<span>" + p + "</span>";
+        if (i === q.blank) return "<span>?</span>";
+        return blocks(p);
+      }).join("") + "</div>";
+    } else if (q.hint === "groups") {
+      // "a × b" = a groups of b.   "p : t" and "? × t" = groups of t
+      var a = q.parts[0], op = q.parts[1], b = q.parts[2], p = q.parts[4];
+      if (op === ":") html = groups(p / b, b);
+      else if (q.blank === 0) html = groups(p / b, b);
+      else if (q.blank === 2) html = groups(a, p / a);
+      else html = groups(a, b);
+    }
+    $("hintSheet").innerHTML = html;
+    $("hint").classList.add("on");
+  }
+
+  /* ---------- parent panel (English, for grown-ups) ---------- */
+  var NAMES = { calc: "+ − (add / subtract)", dbl: "Doubles / halves", tab: "Times tables", line: "Number line" };
+  function renderParent() {
+    var h = "<h2>Parent settings</h2>";
+    for (var g in GAMES) {
+      h += '<div class="prow"><span>' + NAMES[g] + '<br><small style="margin:0">rounds played: ' + (S.played[g] || 0) + "</small></span>" +
+        '<span><button data-p="' + g + '" data-d="-1">−</button> <b>' + S.lv[g] + " / " + GAMES[g].max + '</b> <button data-p="' + g + '" data-d="1">+</button></span></div>';
+    }
+    h += '<div class="prow"><span>Total stars</span><b>' + S.stars + "</b></div>";
+    h += '<button class="wide" id="resetBtn">Reset everything</button> <button class="wide" id="closeParent">Close</button>';
+    h += "<small>Levels go up after 9/10 right first try, and down after 4/10 or less.</small>";
+    $("parentSheet").innerHTML = h;
+  }
+
+  /* ---------- events ---------- */
+  Array.prototype.forEach.call(document.querySelectorAll(".tile"), function (t) {
+    t.addEventListener("click", function () { sfx.tap(); startGame(t.getAttribute("data-game")); });
+  });
+  $("pad").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (b) key(b.getAttribute("data-k"));
+  });
+  $("homeBtn").addEventListener("click", function () { G = null; show("home"); });
+  $("hintBtn").addEventListener("click", function () { if (G && G.q && G.q.hint) showHint(); });
+  $("hint").addEventListener("click", function () { $("hint").classList.remove("on"); });
+  $("endHome").addEventListener("click", function () { show("home"); });
+  $("endAgain").addEventListener("click", function () { startGame(G.id); });
+  $("soundBtn").addEventListener("click", function () { S.sound = !S.sound; save(); renderHome(); });
+
+  // parent panel: hold the gear button for 1 second (so it isn't opened by accident)
+  var holdT = null;
+  $("parentBtn").addEventListener("pointerdown", function () { holdT = setTimeout(function () { renderParent(); $("parent").classList.add("on"); }, 1000); });
+  ["pointerup", "pointerleave", "pointercancel"].forEach(function (ev) { $("parentBtn").addEventListener(ev, function () { clearTimeout(holdT); }); });
+  $("parent").addEventListener("click", function (e) {
+    var b = e.target.closest("button");
+    if (e.target === $("parent") || (b && b.id === "closeParent")) { $("parent").classList.remove("on"); renderHome(); return; }
+    if (b && b.id === "resetBtn") {
+      if (window.confirm("Reset all levels and stars?")) { S.lv = { calc: 3, dbl: 2, tab: 2, line: 2 }; S.stars = 0; S.rounds = 0; S.played = {}; save(); renderParent(); }
+      return;
+    }
+    if (b && b.getAttribute("data-p")) {
+      var g = b.getAttribute("data-p");
+      S.lv[g] = Math.max(1, Math.min(GAMES[g].max, S.lv[g] + parseInt(b.getAttribute("data-d"), 10)));
+      save(); renderParent();
+    }
+  });
+
+  // keyboard (handy when testing on a computer)
+  document.addEventListener("keydown", function (e) {
+    if (!$("game").classList.contains("on")) return;
+    if (/^[0-9]$/.test(e.key)) key(e.key);
+    else if (e.key === "Backspace") key("del");
+    else if (e.key === "Enter") key("go");
+    else if (G && G.q.kind === "lineP" && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+      G.sel = Math.max(0, Math.min(10, (G.sel === null ? 5 : G.sel) + (e.key === "ArrowLeft" ? -1 : 1))); drawLine();
+    }
+  });
+
+  // stop iOS from scrolling/bouncing the page
+  document.addEventListener("touchmove", function (e) { if (!e.target.closest(".sheet")) e.preventDefault(); }, { passive: false });
+
+  renderHome();
+})();
+</script>
+</body>
+</html>
